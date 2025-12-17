@@ -35,8 +35,9 @@ def load_config():
         sys.path.insert(0, str(Path(__file__).parent))
         from trendradar.utils.config_loader import load_tiered_config, get_remote_storage_config
 
-        # 使用三级优先级加载配置
-        config = load_tiered_config()
+        # 使用三级优先级加载配置，显式传入项目根目录
+        project_root = Path(__file__).parent
+        config = load_tiered_config(project_root=project_root)
         return config
     except ImportError:
         # 回退到原有的加载方式
