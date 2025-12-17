@@ -128,16 +128,57 @@ class AppContext:
     def get_storage_manager(self):
         """获取存储管理器（延迟初始化，单例）"""
         if self._storage_manager is None:
-            storage_config = self.config.get("STORAGE", {})
-            remote_config = storage_config.get("REMOTE", {})
-            local_config = storage_config.get("LOCAL", {})
-            pull_config = storage_config.get("PULL", {})
+            # 尝试使用新的配置加载器
+            try:
+                import sys
+                from pathlib import Path
+                current_file = Path(__file__)
+                project_root = current_file.parent.parent
+                sys.path.insert(0, str(project_root))
+                from trendradar.utils.config_loader import load_tiered_config
+
+                # 使用三级优先级加载配置
+                tiered_config = load_tiered_config(project_root)
+                storage_config = tiered_config.get("storage", {})
+
+                # 转换为旧的键名格式（兼容性）
+                storage_config_old = {
+                    "BACKEND": storage_config.get("backend", "auto"),
+                    "FORMATS": storage_config.get("formats", {}),
+                    "LOCAL": {
+                        "DATA_DIR": storage_config.get("local", {}).get("data_dir", "output"),
+                        "RETENTION_DAYS": storage_config.get("local", {}).get("retention_days", 0)
+                    },
+                    "REMOTE": {
+                        "BUCKET_NAME": storage_config.get("remote", {}).get("bucket_name", ""),
+                        "ACCESS_KEY_ID": storage_config.get("remote", {}).get("access_key_id", ""),
+                        "SECRET_ACCESS_KEY": storage_config.get("remote", {}).get("secret_access_key", ""),
+                        "ENDPOINT_URL": storage_config.get("remote", {}).get("endpoint_url", ""),
+                        "REGION": storage_config.get("remote", {}).get("region", ""),
+                        "RETENTION_DAYS": storage_config.get("remote", {}).get("retention_days", 0)
+                    },
+                    "PULL": {
+                        "ENABLED": storage_config.get("pull", {}).get("enabled", False),
+                        "DAYS": storage_config.get("pull", {}).get("days", 7)
+                    }
+                }
+
+                remote_config = storage_config_old["REMOTE"]
+                local_config = storage_config_old["LOCAL"]
+                pull_config = storage_config_old["PULL"]
+
+            except (ImportError, KeyError):
+                # 回退到原有的配置方式
+                storage_config_old = self.config.get("STORAGE", {})
+                remote_config = storage_config_old.get("REMOTE", {})
+                local_config = storage_config_old.get("LOCAL", {})
+                pull_config = storage_config_old.get("PULL", {})
 
             self._storage_manager = get_storage_manager(
-                backend_type=storage_config.get("BACKEND", "auto"),
+                backend_type=storage_config_old.get("BACKEND", "auto"),
                 data_dir=local_config.get("DATA_DIR", "output"),
-                enable_txt=storage_config.get("FORMATS", {}).get("TXT", True),
-                enable_html=storage_config.get("FORMATS", {}).get("HTML", True),
+                enable_txt=storage_config_old.get("FORMATS", {}).get("TXT", True),
+                enable_html=storage_config_old.get("FORMATS", {}).get("HTML", True),
                 remote_config={
                     "bucket_name": remote_config.get("BUCKET_NAME", ""),
                     "access_key_id": remote_config.get("ACCESS_KEY_ID", ""),

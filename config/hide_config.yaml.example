@@ -1,0 +1,43 @@
+# 隐藏配置文件示例
+#
+# 此文件用于存储敏感配置信息，不应提交到版本控制系统
+# 复制此文件为 hide_config.yaml 并填入实际值
+#
+# 配置优先级（从高到低）：
+# 1. config/config.yaml - 主配置文件
+# 2. config/hide_config.yaml - 隐藏配置文件（此文件）
+# 3. 环境变量
+
+storage:
+  # 远程存储配置（S3兼容）
+  remote:
+    # S3服务端点
+    # 例如: https://<account-id>.r2.cloudflarestorage.com
+    endpoint_url: "your-s3-endpoint-url"
+
+    # 存储桶名称
+    bucket_name: "your-bucket-name"
+
+    # 访问密钥ID
+    access_key_id: "your-access-key-id"
+
+    # 访问密钥
+    secret_access_key: "your-secret-access-key"
+
+    # 区域（可选）
+    region: "us-east-1"
+
+    # 远程数据保留天数（0 = 不清理）
+    retention_days: 60
+
+# 本地存储配置（可选）
+local:
+  # 本地数据保留天数（0 = 不清理）
+  retention_days: 30
+
+# 数据拉取配置（可选）
+pull:
+  # 是否启用启动时自动拉取
+  enabled: true
+  # 拉取最近 N 天的数据
+  days: 7

@@ -36,14 +36,25 @@ class StorageSyncTools:
         self._remote_backend = None
 
     def _load_config(self) -> dict:
-        """加载配置文件"""
+        """加载配置文件（支持三级优先级）"""
         if self._config is None:
-            config_path = self.project_root / "config" / "config.yaml"
-            if config_path.exists():
-                with open(config_path, "r", encoding="utf-8") as f:
-                    self._config = yaml.safe_load(f)
-            else:
-                self._config = {}
+            try:
+                # 导入新的配置加载器
+                import sys
+                from pathlib import Path
+                sys.path.insert(0, str(self.project_root))
+                from trendradar.utils.config_loader import load_tiered_config
+
+                # 使用三级优先级加载配置
+                self._config = load_tiered_config(self.project_root)
+            except ImportError:
+                # 回退到原有的加载方式
+                config_path = self.project_root / "config" / "config.yaml"
+                if config_path.exists():
+                    with open(config_path, "r", encoding="utf-8") as f:
+                        self._config = yaml.safe_load(f) or {}
+                else:
+                    self._config = {}
         return self._config
 
     def _get_storage_config(self) -> dict:
@@ -53,18 +64,28 @@ class StorageSyncTools:
 
     def _get_remote_config(self) -> dict:
         """
-        获取远程存储配置（合并配置文件和环境变量）
+        获取远程存储配置（三级优先级已合并）
         """
-        storage_config = self._get_storage_config()
-        remote_config = storage_config.get("remote", {})
+        config = self._load_config()
+        try:
+            # 使用新的配置加载器获取远程配置
+            import sys
+            sys.path.insert(0, str(self.project_root))
+            from trendradar.utils.config_loader import get_remote_storage_config
 
-        return {
-            "endpoint_url": remote_config.get("endpoint_url") or os.environ.get("S3_ENDPOINT_URL", ""),
-            "bucket_name": remote_config.get("bucket_name") or os.environ.get("S3_BUCKET_NAME", ""),
-            "access_key_id": remote_config.get("access_key_id") or os.environ.get("S3_ACCESS_KEY_ID", ""),
-            "secret_access_key": remote_config.get("secret_access_key") or os.environ.get("S3_SECRET_ACCESS_KEY", ""),
-            "region": remote_config.get("region") or os.environ.get("S3_REGION", ""),
-        }
+            return get_remote_storage_config(config)
+        except ImportError:
+            # 回退到原有的方式（包含环境变量）
+            storage_config = config.get("storage", {})
+            remote_config = storage_config.get("remote", {})
+
+            return {
+                "endpoint_url": remote_config.get("endpoint_url") or os.environ.get("S3_ENDPOINT_URL", ""),
+                "bucket_name": remote_config.get("bucket_name") or os.environ.get("S3_BUCKET_NAME", ""),
+                "access_key_id": remote_config.get("access_key_id") or os.environ.get("S3_ACCESS_KEY_ID", ""),
+                "secret_access_key": remote_config.get("secret_access_key") or os.environ.get("S3_SECRET_ACCESS_KEY", ""),
+                "region": remote_config.get("region") or os.environ.get("S3_REGION", ""),
+            }
 
     def _has_remote_config(self) -> bool:
         """检查是否有有效的远程存储配置"""

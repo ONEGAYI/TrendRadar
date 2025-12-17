@@ -1,3 +1,4 @@
 mcp_server
 uv.lock
 nul
+config/hide_config.yaml
