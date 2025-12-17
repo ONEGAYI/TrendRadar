@@ -33,7 +33,7 @@ storage:
   # 建议将敏感信息配置在 GitHub Secrets 或环境变量中
   remote:
     # 数据保留天数（0 = 不清理远程数据）
-    retention_days: 0
+    retention_days: 60
     # S3 兼容配置
     endpoint_url: ""          # 服务端点（或环境变量 S3_ENDPOINT_URL）
                               # Cloudflare R2: https://<account_id>.r2.cloudflarestorage.com
