@@ -11,6 +11,7 @@
 from typing import Dict, List, Tuple, Optional, Callable
 
 from trendradar.core.frequency import matches_word_groups
+from trendradar.utils.time_parser import parse_hhmm_time
 
 
 def calculate_news_weight(
@@ -163,12 +164,15 @@ def count_word_frequency(
         # current 模式：只处理当前时间批次的新闻，但统计信息来自全部历史
         if title_info:
             latest_time = None
+            latest_timestamp = 0
             for source_titles in title_info.values():
                 for title_data in source_titles.values():
                     last_time = title_data.get("last_time", "")
                     if last_time:
-                        if latest_time is None or last_time > latest_time:
+                        last_timestamp = parse_hhmm_time(last_time)
+                        if latest_timestamp == 0 or last_timestamp > latest_timestamp:
                             latest_time = last_time
+                            latest_timestamp = last_timestamp
 
             # 只处理 last_time 等于最新时间的新闻
             if latest_time:
@@ -179,7 +183,8 @@ def count_word_frequency(
                         for title, title_data in source_titles.items():
                             if title in title_info[source_id]:
                                 info = title_info[source_id][title]
-                                if info.get("last_time") == latest_time:
+                                info_timestamp = parse_hhmm_time(info.get("last_time")) if info.get("last_time") else 0
+                                if info_timestamp == latest_timestamp:
                                     filtered_titles[title] = title_data
                         if filtered_titles:
                             results_to_process[source_id] = filtered_titles

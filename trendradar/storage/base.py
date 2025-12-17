@@ -11,6 +11,8 @@ from datetime import datetime
 from typing import Dict, List, Optional, Any
 import json
 
+from ..utils.time_parser import parse_hhmm_time
+
 
 @dataclass
 class NewsItem:
@@ -149,10 +151,16 @@ class NewsData:
                     existing.ranks = merged_ranks
 
                     # 更新时间
-                    if item.first_time and (not existing.first_time or item.first_time < existing.first_time):
-                        existing.first_time = item.first_time
-                    if item.last_time and (not existing.last_time or item.last_time > existing.last_time):
-                        existing.last_time = item.last_time
+                    if item.first_time:
+                        item_first_ts = parse_hhmm_time(item.first_time)
+                        existing_first_ts = parse_hhmm_time(existing.first_time) if existing.first_time else 0
+                        if item_first_ts > 0 and (existing_first_ts == 0 or item_first_ts < existing_first_ts):
+                            existing.first_time = item.first_time
+                    if item.last_time:
+                        item_last_ts = parse_hhmm_time(item.last_time)
+                        existing_last_ts = parse_hhmm_time(existing.last_time) if existing.last_time else 0
+                        if item_last_ts > existing_last_ts:
+                            existing.last_time = item.last_time
 
                     # 更新计数
                     existing.count += 1
