@@ -3,6 +3,8 @@ uv.lock
 nul
 config/hide_config.yaml
 
+output/*
+
 # pycache files
 __pycache__/
 */__pycache__/
