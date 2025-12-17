@@ -142,12 +142,33 @@ class AppContext:
                 storage_config = tiered_config.get("storage", {})
 
                 # 转换为旧的键名格式（兼容性）
+                # 确保 retention_days 和 pull_days 是整数类型
+                local_retention_days = storage_config.get("local", {}).get("retention_days", 0)
+                remote_retention_days = storage_config.get("remote", {}).get("retention_days", 0)
+                pull_days = storage_config.get("pull", {}).get("days", 7)
+
+                # 转换为整数，如果是字符串的话
+                try:
+                    local_retention_days = int(local_retention_days) if local_retention_days else 0
+                except (ValueError, TypeError):
+                    local_retention_days = 0
+
+                try:
+                    remote_retention_days = int(remote_retention_days) if remote_retention_days else 0
+                except (ValueError, TypeError):
+                    remote_retention_days = 0
+
+                try:
+                    pull_days = int(pull_days) if pull_days else 7
+                except (ValueError, TypeError):
+                    pull_days = 7
+
                 storage_config_old = {
                     "BACKEND": storage_config.get("backend", "auto"),
                     "FORMATS": storage_config.get("formats", {}),
                     "LOCAL": {
                         "DATA_DIR": storage_config.get("local", {}).get("data_dir", "output"),
-                        "RETENTION_DAYS": storage_config.get("local", {}).get("retention_days", 0)
+                        "RETENTION_DAYS": local_retention_days
                     },
                     "REMOTE": {
                         "BUCKET_NAME": storage_config.get("remote", {}).get("bucket_name", ""),
@@ -155,11 +176,11 @@ class AppContext:
                         "SECRET_ACCESS_KEY": storage_config.get("remote", {}).get("secret_access_key", ""),
                         "ENDPOINT_URL": storage_config.get("remote", {}).get("endpoint_url", ""),
                         "REGION": storage_config.get("remote", {}).get("region", ""),
-                        "RETENTION_DAYS": storage_config.get("remote", {}).get("retention_days", 0)
+                        "RETENTION_DAYS": remote_retention_days
                     },
                     "PULL": {
                         "ENABLED": storage_config.get("pull", {}).get("enabled", False),
-                        "DAYS": storage_config.get("pull", {}).get("days", 7)
+                        "DAYS": pull_days
                     }
                 }
 
@@ -174,6 +195,27 @@ class AppContext:
                 local_config = storage_config_old.get("LOCAL", {})
                 pull_config = storage_config_old.get("PULL", {})
 
+            # 确保数值类型正确转换
+            local_retention_days = local_config.get("RETENTION_DAYS", 0)
+            remote_retention_days = remote_config.get("RETENTION_DAYS", 0)
+            pull_days = pull_config.get("DAYS", 7)
+
+            # 转换为整数，处理可能的字符串值
+            try:
+                local_retention_days = int(local_retention_days) if local_retention_days else 0
+            except (ValueError, TypeError):
+                local_retention_days = 0
+
+            try:
+                remote_retention_days = int(remote_retention_days) if remote_retention_days else 0
+            except (ValueError, TypeError):
+                remote_retention_days = 0
+
+            try:
+                pull_days = int(pull_days) if pull_days else 7
+            except (ValueError, TypeError):
+                pull_days = 7
+
             self._storage_manager = get_storage_manager(
                 backend_type=storage_config_old.get("BACKEND", "auto"),
                 data_dir=local_config.get("DATA_DIR", "output"),
@@ -186,10 +228,10 @@ class AppContext:
                     "endpoint_url": remote_config.get("ENDPOINT_URL", ""),
                     "region": remote_config.get("REGION", ""),
                 },
-                local_retention_days=local_config.get("RETENTION_DAYS", 0),
-                remote_retention_days=remote_config.get("RETENTION_DAYS", 0),
+                local_retention_days=local_retention_days,
+                remote_retention_days=remote_retention_days,
                 pull_enabled=pull_config.get("ENABLED", False),
-                pull_days=pull_config.get("DAYS", 7),
+                pull_days=pull_days,
                 timezone=self.timezone,
             )
         return self._storage_manager
