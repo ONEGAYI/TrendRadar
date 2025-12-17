@@ -2,3 +2,11 @@ mcp_server
 uv.lock
 nul
 config/hide_config.yaml
+
+# pycache files
+__pycache__/
+*/__pycache__/
+**/__pycache__/
+*.py[cod]
+*$py.class
+*$py.py[cod]
