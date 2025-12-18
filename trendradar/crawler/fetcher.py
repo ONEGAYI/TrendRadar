@@ -114,6 +114,23 @@ class DataFetcher:
 
         return None, id_value, alias
 
+    def _fix_weibo_url(self, link: str) -> str:
+        """
+        修复微博链接中的%23编码问题
+
+        Args:
+            link: 原始链接
+
+        Returns:
+            修复后的链接
+        """
+        if "s.weibo.com/weibo?q=%23" in link:
+            # 将开头的 "?q=%23" 替换为 "?q="
+            link = link.replace("?q=%23", "?q=")
+            # 将结尾的 "%23&t=" 替换为 "&t="
+            link = link.replace("%23&t=", "&t=")
+        return link
+
     def crawl_websites(
         self,
         ids_list: List[Union[str, Tuple[str, str]]],
@@ -156,6 +173,10 @@ class DataFetcher:
                         title = str(title).strip()
                         url = item.get("url", "")
                         mobile_url = item.get("mobileUrl", "")
+
+                        # 修复微博热搜链接中%23编码导致无法正常跳转的问题
+                        url = self._fix_weibo_url(url)
+                        mobile_url = self._fix_weibo_url(mobile_url)
 
                         if title in results[id_value]:
                             results[id_value][title]["ranks"].append(index)
